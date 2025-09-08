@@ -1,13 +1,14 @@
 #!/bin/bash
 
 # Script: deploy_postgres.sh
-# Purpose: Deploy PostgreSQL on Kubernetes (single node cluster)
+# Purpose: Deploy PostgreSQL on Kubernetes (single node cluster) with NodePort access
 # Author: Dipak Rasal
 
 NAMESPACE="database"
 POSTGRES_USER="admin"
 POSTGRES_PASSWORD="admin123"
 POSTGRES_DB="mydb"
+NODEPORT=30007   # NodePort range: 30000-32767
 
 echo "🚀 Creating namespace: $NAMESPACE"
 kubectl create namespace $NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
@@ -19,7 +20,7 @@ kubectl -n $NAMESPACE create secret generic postgres-secret \
   --from-literal=POSTGRES_DB=$POSTGRES_DB \
   --dry-run=client -o yaml | kubectl apply -f -
 
-echo "📦 Deploying PostgreSQL Deployment & Service..."
+echo "📦 Deploying PostgreSQL Deployment & NodePort Service..."
 cat <<EOF | kubectl apply -n $NAMESPACE -f -
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -67,15 +68,16 @@ kind: Service
 metadata:
   name: postgres-service
 spec:
-  type: ClusterIP
+  type: NodePort
   ports:
     - port: 5432
       targetPort: 5432
+      nodePort: $NODEPORT
   selector:
     app: postgres
 EOF
 
-echo "✅ PostgreSQL deployed successfully!"
-echo "👉 To connect inside cluster: postgres-service.$NAMESPACE.svc.cluster.local:5432"
-echo "👉 Username: $POSTGRES_USER | Database: $POSTGRES_DB"
+echo "✅ PostgreSQL deployed successfully with NodePort!"
+echo "👉 Connect using: <NodeIP>:$NODEPORT"
+echo "👉 Username: $POSTGRES_USER | Password: $POSTGRES_PASSWORD | Database: $POSTGRES_DB"
 
