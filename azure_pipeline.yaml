@@ -1,0 +1,63 @@
+trigger:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  POSTGRES_USER: $(POSTGRES_USER)
+  POSTGRES_PASSWORD: $(POSTGRES_PASSWORD)
+  POSTGRES_DB: $(POSTGRES_DB)
+
+stages:
+- stage: Deploy
+  jobs:
+  - job: DeployPostgres
+    steps:
+    - task: Checkout@v2
+
+    # ✅ Install kubectl + oc (if needed)
+    - script: |
+        sudo az aks install-cli
+        curl -LO https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/linux/oc.tar.gz
+        tar -xvf oc.tar.gz
+        sudo mv oc /usr/local/bin/
+      displayName: "Install kubectl & oc"
+
+    # ✅ Authenticate to cluster (choose one)
+    - script: |
+        az aks get-credentials --resource-group <RG-NAME> --name <CLUSTER-NAME>
+      displayName: "Authenticate to Kubernetes"
+      condition: eq(variables['ClusterType'], 'k8s')
+
+    - script: |
+        oc login --token=$(OC_TOKEN) --server=$(OC_SERVER)
+      displayName: "Authenticate to OpenShift"
+      condition: eq(variables['ClusterType'], 'oc')
+
+    # ✅ Run deployment script
+    - script: |
+        chmod +x scripts/deploy_postgres_k8s.sh
+        ./scripts/deploy_postgres_k8s.sh
+      displayName: "Deploy PostgreSQL to Kubernetes"
+      condition: eq(variables['ClusterType'], 'k8s')
+
+    - script: |
+        chmod +x scripts/deploy_postgres_oc.sh
+        ./scripts/deploy_postgres_oc.sh
+      displayName: "Deploy PostgreSQL to OpenShift"
+      condition: eq(variables['ClusterType'], 'oc')
+
+    # ✅ Post-deployment check
+    - script: |
+        kubectl get pods -n postgres
+      displayName: "Verify PostgreSQL Deployment"
+      condition: eq(variables['ClusterType'], 'k8s')
+
+    - script: |
+        oc get pods -n postgres
+      displayName: "Verify PostgreSQL Deployment"
+      condition: eq(variables['ClusterType'], 'oc')
+
