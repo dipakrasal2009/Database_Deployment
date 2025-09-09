@@ -1,0 +1,24 @@
+global:
+  storageClass: "standard"
+
+image:
+  registry: quay.io
+  repository: bitnami/postgresql
+  tag: 16.3.0
+  pullPolicy: IfNotPresent
+
+primary:
+  persistence:
+    enabled: true
+    size: 10Gi
+
+auth:
+  enablePostgresUser: true
+  postgresPassword: "StrongPassword123"
+  database: "appdb"
+
+service:
+  type: NodePort
+  nodePorts:
+    postgresql: 30007
+  port: 5432
