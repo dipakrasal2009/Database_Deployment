@@ -1,0 +1,43 @@
+# PostgreSQL Configuration
+auth:
+  postgresPassword: "AdminPassword123"
+  username: "myuser"
+  password: "UserPassword123"
+  database: "mydatabase"
+
+# Primary PostgreSQL configuration
+primary:
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClass: "standard"
+    accessModes:
+      - ReadWriteOnce
+  
+  resources:
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+
+# Service configuration
+service:
+  type: ClusterIP
+  ports:
+    postgresql: 5432
+
+# Metrics configuration (optional)
+metrics:
+  enabled: false
+  
+# Security context
+primary:
+  podSecurityContext:
+    enabled: true
+    fsGroup: 1001
+  containerSecurityContext:
+    enabled: true
+    runAsUser: 1001
+    runAsNonRoot: true
