@@ -1,3 +1,6 @@
 .terraform.tfstate
 .terraform.tfstate.backup
-
+.terraform.lock.hcl
+.terraform
+.main.tf.swp
+.hi.c
